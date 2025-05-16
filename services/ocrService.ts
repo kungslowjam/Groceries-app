@@ -21,7 +21,7 @@ export async function extractTextFromImage(
       encoding: FileSystem.EncodingType.Base64,
     });
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
 From the receipt image, return ONLY valid JSON in this exact shape:
