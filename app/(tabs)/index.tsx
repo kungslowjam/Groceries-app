@@ -1,5 +1,5 @@
 // HomePage.tsx
-import { extractTextFromImage } from "@/services/ocrService";
+import { runOcr } from "@/services/ocrService";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import Svg, { Circle } from 'react-native-svg';
+import { useI18n } from "../../lib/i18n";
 
 import {
   ActivityIndicator,
@@ -41,6 +42,7 @@ const categories: Category[] = [
 ];
 
 export default function HomePage() {
+  const { t } = useI18n();
   const [items, setItems] = useState<Item[]>([]);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -113,9 +115,11 @@ export default function HomePage() {
   const runOCR = async (uri: string) => {
     try {
       setLoading(true);
-      const { store, items } = await extractTextFromImage(uri);
-      setStore(store?.trim() || "");
-      setItems(items.map((item, i) => ({ id: String(i + 1), ...item })));
+      const ocrText = await runOcr(uri);
+      // TODO: post-process ด้วย LLM (Gemini/OpenAI) เพื่อแปลง text เป็น JSON (store, items)
+      // ตัวอย่าง: ส่ง ocrText ไป LLM แล้ว setStore/setItems ตามผลลัพธ์
+      // setStore(...); setItems(...);
+      Alert.alert("OCR Result", ocrText.slice(0, 500)); // แสดงตัวอย่างข้อความ OCR
     } catch {
       Alert.alert("Error", "Failed to process image.");
     } finally {
@@ -292,9 +296,9 @@ export default function HomePage() {
       {/* ------------ Header ------------ */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.small}>Hello,</Text>
+          <Text style={styles.small}>{t('hello')}</Text>
           <Text style={styles.largeMinimal}>
-            {user?.user_metadata?.name || user?.email || "Hi Shopper"}
+            {user?.user_metadata?.name || user?.email || t('hiShopper')}
           </Text>
         </View>
         <Pressable onPress={handleSignOut} style={styles.avatarShadow}>
@@ -336,7 +340,7 @@ export default function HomePage() {
               }}
             >
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                <Text style={{ color: "#FFF", fontSize: 18, fontWeight: "700", letterSpacing: 0.5 }}>Monthly Spend</Text>
+                <Text style={{ color: "#FFF", fontSize: 18, fontWeight: "700", letterSpacing: 0.5 }}>{t('monthlySpend')}</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                   <Pressable onPress={() => changeMonth(-1)} hitSlop={12} style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}>
                     <Feather name="chevron-left" size={22} color="#FFF" />
@@ -354,7 +358,7 @@ export default function HomePage() {
                 <View style={{ alignItems: "center", minWidth: 80 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                     <MaterialCommunityIcons name="cash-multiple" size={16} color="#FFF" />
-                    <Text style={{ color: "#E0E7FF", fontSize: 14, letterSpacing: 0.2 }}>Total</Text>
+                    <Text style={{ color: "#E0E7FF", fontSize: 14 }}>{t('total')}</Text>
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
                     <Text style={{ color: "#FFF", fontSize: 18, fontWeight: "700", letterSpacing: 0.5, fontVariant: ["tabular-nums"] }}>${thisMonthStats.total.toFixed(2)}</Text>
@@ -376,7 +380,7 @@ export default function HomePage() {
                 <View style={{ alignItems: "center", minWidth: 80 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                     <MaterialCommunityIcons name="chart-bar" size={16} color="#FFF" />
-                    <Text style={{ color: "#E0E7FF", fontSize: 14, letterSpacing: 0.2 }}>Sessions</Text>
+                    <Text style={{ color: "#E0E7FF", fontSize: 14 }}>{t('sessions')}</Text>
                   </View>
                   <Text style={{ color: "#FFF", fontSize: 18, fontWeight: "600", letterSpacing: 0.5, marginTop: 2 }}>{thisMonthStats.sessions}</Text>
                 </View>
@@ -384,7 +388,7 @@ export default function HomePage() {
                 <View style={{ alignItems: "center", minWidth: 80 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                     <MaterialCommunityIcons name="timer-outline" size={16} color="#FFF" />
-                    <Text style={{ color: "#E0E7FF", fontSize: 14, letterSpacing: 0.2 }}>Average</Text>
+                    <Text style={{ color: "#E0E7FF", fontSize: 14 }}>{t('average')}</Text>
                   </View>
                   <Text style={{ color: "#FFF", fontSize: 18, fontWeight: "600", letterSpacing: 0.5, marginTop: 2 }}>${thisMonthStats.average.toFixed(2)}</Text>
                 </View>
@@ -407,14 +411,14 @@ export default function HomePage() {
             }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ color: "#FFF", fontSize: 16, fontWeight: "700", marginBottom: 4 }}>
-                  Your budget status
+                  {t('budgetStatus')}
                 </Text>
                 <Text style={{ color: "#E0E7FF", fontSize: 14, marginBottom: 12 }}>
                   {budget !== null
                     ? Number(total) > budget
-                      ? "You have exceeded your budget!"
-                      : "You're on track with your budget."
-                    : "Set your budget to track your spending."}
+                      ? t('overBudget')
+                      : t('inBudget')
+                    : t('setBudget')}
                 </Text>
                 {budget === null ? (
                   <>
@@ -498,9 +502,9 @@ export default function HomePage() {
 
             {/* Scanned Items Header */}
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Scanned Items</Text>
+              <Text style={styles.sectionTitle}>{t('scannedItems')}</Text>
               <View style={styles.sectionRight}>
-                <Text style={styles.totalText}>Total: ${total}</Text>
+                <Text style={styles.totalText}>{t('total')}: ${total}</Text>
                 <Pressable onPress={handleSave} style={styles.saveIcon}>
                   <MaterialCommunityIcons name="content-save-outline" size={30} color="#60A5FA" />
                 </Pressable>
@@ -513,7 +517,7 @@ export default function HomePage() {
             {/* ---------- ⬇️ Store row อยู่ตรงนี้ ⬇️ ---------- */}
             {!!store && (
               <View style={styles.storeFooter}>
-                <Text style={styles.storeLabel}>Store</Text>
+                <Text style={styles.storeLabel}>{t('store')}</Text>
                 <Text style={styles.storeName}>{store}</Text>
               </View>
             )}

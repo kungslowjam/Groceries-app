@@ -1,6 +1,7 @@
 // services/ocrService.ts
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as FileSystem from "expo-file-system";
+import Tesseract from 'tesseract.js';
 
 const GEMINI_API_KEY = "AIzaSyBNslYOwf1Eh1BVStD9p6Qq5CWY-iIZNwU";
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -35,7 +36,7 @@ From the receipt image, return ONLY valid JSON in this exact shape:
 }
 
 - Choose ONE of the four category strings for every item.
-- If you’re unsure, default to "Bakery".
+- If you're unsure, default to "Bakery".
 `;
 
     const result = await model.generateContent([
@@ -54,5 +55,26 @@ From the receipt image, return ONLY valid JSON in this exact shape:
   } catch (err) {
     console.error("❌ Gemini OCR parse error:", err);
     return { store: "Unknown Store", items: [] };
+  }
+}
+
+// OCR ด้วย Tesseract.js (on-device, eng+tha)
+export async function runOcr(imageUri: string): Promise<string> {
+  try {
+    // อ่านไฟล์เป็น base64
+    const base64 = await FileSystem.readAsStringAsync(imageUri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const imageData = `data:image/jpeg;base64,${base64}`;
+
+    // OCR ด้วย Tesseract.js (ภาษาอังกฤษ+ไทย)
+    const { data } = await Tesseract.recognize(imageData, 'eng+tha', {
+      logger: m => console.log(m), // ดู progress ได้
+    });
+
+    return data.text;
+  } catch (err) {
+    console.error('❌ OCR error:', err);
+    return '';
   }
 }
