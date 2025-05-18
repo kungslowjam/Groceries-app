@@ -267,7 +267,7 @@ export default function SettingsPage() {
               </Pressable>
             ))}
           </View>
-        </View>
+    </View>
       </Modal>
     </SafeAreaView>
   );

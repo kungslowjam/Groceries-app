@@ -1,5 +1,5 @@
 // HomePage.tsx
-import { runOcr } from "@/services/ocrService";
+import { extractTextFromImage } from "@/services/ocrService";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from '@react-navigation/native';
@@ -115,11 +115,9 @@ export default function HomePage() {
   const runOCR = async (uri: string) => {
     try {
       setLoading(true);
-      const ocrText = await runOcr(uri);
-      // TODO: post-process ด้วย LLM (Gemini/OpenAI) เพื่อแปลง text เป็น JSON (store, items)
-      // ตัวอย่าง: ส่ง ocrText ไป LLM แล้ว setStore/setItems ตามผลลัพธ์
-      // setStore(...); setItems(...);
-      Alert.alert("OCR Result", ocrText.slice(0, 500)); // แสดงตัวอย่างข้อความ OCR
+      const { store, items } = await extractTextFromImage(uri);
+      setStore(store?.trim() || "");
+      setItems(items.map((item, i) => ({ id: String(i + 1), ...item })));
     } catch {
       Alert.alert("Error", "Failed to process image.");
     } finally {
